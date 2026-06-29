@@ -12,6 +12,7 @@ model User {
   id              String         @id @default(cuid())
   email           String         @unique
   passwordHash    String
+  displayName     String?
   displayCurrency    String         @default("USD")
   householdId        String?
   gmailAccessToken      String?
@@ -32,6 +33,55 @@ model User {
   insuranceClaims   InsuranceClaim[]
   insuranceProposals InsuranceProposal[]
   bankTranscripts BankTranscript[]
+  hostedEvents    Event[]        @relation("EventHost")
+  rsvps           EventRsvp[]    @relation("UserRsvps")
+}
+
+enum EventVisibility {
+  OPEN        // any signed-in family/friend can see and RSVP
+  INVITE_ONLY // visible to the host and invited guests only
+}
+
+enum RsvpStatus {
+  PENDING
+  GOING
+  MAYBE
+  NOT_GOING
+}
+
+model Event {
+  id          String          @id @default(cuid())
+  hostId      String
+  host        User            @relation("EventHost", fields: [hostId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  location    String?
+  startsAt    DateTime
+  endsAt      DateTime?
+  capacity    Int?
+  visibility  EventVisibility @default(INVITE_ONLY)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  rsvps       EventRsvp[]
+
+  @@index([hostId])
+  @@index([startsAt])
+}
+
+model EventRsvp {
+  id        String     @id @default(cuid())
+  eventId   String
+  event     Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User       @relation("UserRsvps", fields: [userId], references: [id], onDelete: Cascade)
+  status    RsvpStatus @default(PENDING)
+  guests    Int        @default(0)
+  message   String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([eventId, userId])
+  @@index([userId])
 }
 
 model Subscription {
