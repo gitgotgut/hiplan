@@ -15,7 +15,6 @@ export async function GET() {
     where: {
       OR: [
         { hostId: userId },
-        { visibility: "OPEN" },
         { rsvps: { some: { userId } } },
       ],
     },

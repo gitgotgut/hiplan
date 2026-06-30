@@ -31,7 +31,6 @@ export async function GET(
   const userId = session.user.id;
   const canView =
     event.hostId === userId ||
-    event.visibility === "OPEN" ||
     event.rsvps.some((r) => r.userId === userId);
 
   if (!canView) {

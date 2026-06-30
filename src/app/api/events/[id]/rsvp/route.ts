@@ -25,7 +25,6 @@ export async function PUT(
   // Must be able to see the event to RSVP to it.
   const canView =
     event.hostId === userId ||
-    event.visibility === "OPEN" ||
     event.rsvps.some((r) => r.userId === userId);
   if (!canView) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });

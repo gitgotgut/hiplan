@@ -32,7 +32,6 @@ export default async function HubPage() {
     where: {
       OR: [
         { hostId: userId },
-        { visibility: "OPEN" },
         { rsvps: { some: { userId } } },
       ],
     },
