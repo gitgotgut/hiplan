@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, Calendar, MapPin, Users, Pencil } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Users, Pencil, CalendarPlus } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getMyCircleIds } from "@/lib/circles";
@@ -122,6 +122,14 @@ export default async function EventDetailPage({
           )}
         </CardContent>
       </Card>
+
+      <div className="mb-6">
+        <Button asChild variant="outline" size="sm" className="gap-2">
+          <a href={`/api/events/${event.id}/ics`}>
+            <CalendarPlus className="h-4 w-4" /> Add to calendar
+          </a>
+        </Button>
+      </div>
 
       {!isHost && (
         <Card className="mb-6">
