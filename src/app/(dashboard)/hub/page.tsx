@@ -4,6 +4,7 @@ import { format, isAfter, isSameMonth } from "date-fns";
 import { Calendar, MapPin, Plus, Users } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { getMyCircleIds } from "@/lib/circles";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,12 +28,14 @@ export default async function HubPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/");
   const userId = session.user.id;
+  const myCircleIds = await getMyCircleIds(userId);
 
   const events = await prisma.event.findMany({
     where: {
       OR: [
         { hostId: userId },
         { rsvps: { some: { userId } } },
+        { visibility: "OPEN", circleId: { in: myCircleIds } },
       ],
     },
     orderBy: { startsAt: "asc" },

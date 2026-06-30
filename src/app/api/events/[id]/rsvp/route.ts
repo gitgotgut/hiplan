@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { rsvpSchema } from "@/lib/validations/event";
 import { rateLimit } from "@/lib/rate-limit";
+import { getMyCircleIds } from "@/lib/circles";
 
 // PUT /api/events/[id]/rsvp — upsert the current user's RSVP
 export async function PUT(
@@ -28,9 +29,13 @@ export async function PUT(
   }
 
   // Must be able to see the event to RSVP to it.
+  const myCircleIds = await getMyCircleIds(userId);
   const canView =
     event.hostId === userId ||
-    event.rsvps.some((r) => r.userId === userId);
+    event.rsvps.some((r) => r.userId === userId) ||
+    (event.visibility === "OPEN" &&
+      !!event.circleId &&
+      myCircleIds.includes(event.circleId));
   if (!canView) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

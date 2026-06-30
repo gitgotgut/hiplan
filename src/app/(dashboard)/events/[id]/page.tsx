@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { ArrowLeft, Calendar, MapPin, Users } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { getMyCircleIds } from "@/lib/circles";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RsvpForm } from "./rsvp-form";
@@ -47,7 +48,13 @@ export default async function EventDetailPage({
 
   const isHost = event.hostId === userId;
   const myRsvp = event.rsvps.find((r) => r.userId === userId);
-  const canView = isHost || event.visibility === "OPEN" || !!myRsvp;
+  const myCircleIds = await getMyCircleIds(userId);
+  const canView =
+    isHost ||
+    !!myRsvp ||
+    (event.visibility === "OPEN" &&
+      !!event.circleId &&
+      myCircleIds.includes(event.circleId));
   if (!canView) notFound();
 
   const goingTotal = event.rsvps

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { eventUpdateSchema } from "@/lib/validations/event";
+import { getMyCircleIds } from "@/lib/circles";
 
 // GET /api/events/[id] — event detail (host, open, or invited only)
 export async function GET(
@@ -29,9 +30,13 @@ export async function GET(
   }
 
   const userId = session.user.id;
+  const myCircleIds = await getMyCircleIds(userId);
   const canView =
     event.hostId === userId ||
-    event.rsvps.some((r) => r.userId === userId);
+    event.rsvps.some((r) => r.userId === userId) ||
+    (event.visibility === "OPEN" &&
+      !!event.circleId &&
+      myCircleIds.includes(event.circleId));
 
   if (!canView) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });

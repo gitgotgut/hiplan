@@ -60,12 +60,14 @@ model Event {
   endsAt      DateTime?
   capacity    Int?
   visibility  EventVisibility @default(INVITE_ONLY)
+  circleId    String?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
   rsvps       EventRsvp[]
 
   @@index([hostId])
   @@index([startsAt])
+  @@index([circleId])
 }
 
 model EventRsvp {

@@ -18,6 +18,7 @@ export const eventCreateSchema = z
     endsAt: z.coerce.date().optional(),
     capacity: z.coerce.number().int().positive().max(100000).optional(),
     visibility: z.enum(["OPEN", "INVITE_ONLY"]).default("INVITE_ONLY"),
+    circleId: z.string().optional(),
   })
   .refine((d) => !d.endsAt || d.endsAt >= d.startsAt, {
     message: "End time must be after the start time",
