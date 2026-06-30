@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -10,18 +10,36 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 
-export default function NewEventPage() {
+// Format a UTC instant as a local datetime-local input value (YYYY-MM-DDTHH:mm).
+function isoToLocalInput(iso: string): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+    d.getHours()
+  )}:${pad(d.getMinutes())}`;
+}
+
+export function EditEventForm({
+  id,
+  title,
+  description,
+  location,
+  startsAtIso,
+  endsAtIso,
+  capacity,
+}: {
+  id: string;
+  title: string;
+  description: string;
+  location: string;
+  startsAtIso: string;
+  endsAtIso: string;
+  capacity: number | null;
+}) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [circles, setCircles] = useState<{ id: string; name: string }[]>([]);
-
-  useEffect(() => {
-    fetch("/api/circles")
-      .then((r) => (r.ok ? r.json() : []))
-      .then(setCircles)
-      .catch(() => {});
-  }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -29,50 +47,46 @@ export default function NewEventPage() {
     setLoading(true);
 
     const form = new FormData(e.currentTarget);
-    const share = (form.get("share") as string) || "";
     const startsRaw = (form.get("startsAt") as string) || "";
     const endsRaw = (form.get("endsAt") as string) || "";
+    const capRaw = (form.get("capacity") as string) || "";
+
     const payload = {
       title: form.get("title"),
-      description: form.get("description") || undefined,
-      location: form.get("location") || undefined,
-      // datetime-local is in the user's local tz; send a real UTC instant.
-      startsAt: startsRaw ? new Date(startsRaw).toISOString() : startsRaw,
-      endsAt: endsRaw ? new Date(endsRaw).toISOString() : undefined,
-      capacity: form.get("capacity") || undefined,
-      visibility: share ? "OPEN" : "INVITE_ONLY",
-      circleId: share || undefined,
+      description: (form.get("description") as string) || undefined,
+      location: (form.get("location") as string) || undefined,
+      startsAt: startsRaw ? new Date(startsRaw).toISOString() : undefined,
+      endsAt: endsRaw ? new Date(endsRaw).toISOString() : null,
+      capacity: capRaw ? Number(capRaw) : null,
     };
 
-    const res = await fetch("/api/events", {
-      method: "POST",
+    const res = await fetch(`/api/events/${id}`, {
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
 
     setLoading(false);
-
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setError(data.error ?? "Something went wrong. Please try again.");
       return;
     }
 
-    const event = await res.json();
-    router.push(`/events/${event.id}`);
+    router.push(`/events/${id}`);
     router.refresh();
   }
 
   return (
     <div className="max-w-2xl mx-auto">
       <Link
-        href="/hub"
+        href={`/events/${id}`}
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to events
+        <ArrowLeft className="h-4 w-4" /> Back to event
       </Link>
 
-      <h1 className="text-2xl font-bold mb-6">New Event</h1>
+      <h1 className="text-2xl font-bold mb-6">Edit Event</h1>
 
       <Card>
         <CardContent className="pt-6">
@@ -85,7 +99,7 @@ export default function NewEventPage() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-1.5">
               <Label htmlFor="title">Title</Label>
-              <Input id="title" name="title" required maxLength={120} placeholder="Sunday brunch" />
+              <Input id="title" name="title" required maxLength={120} defaultValue={title} />
             </div>
 
             <div className="space-y-1.5">
@@ -95,55 +109,55 @@ export default function NewEventPage() {
                 name="description"
                 rows={3}
                 maxLength={2000}
-                placeholder="What's the plan?"
+                defaultValue={description}
               />
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="location">Location</Label>
-              <Input id="location" name="location" maxLength={200} placeholder="Grandma's place" />
+              <Input id="location" name="location" maxLength={200} defaultValue={location} />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="startsAt">Starts</Label>
-                <Input id="startsAt" name="startsAt" type="datetime-local" required />
+                <Input
+                  id="startsAt"
+                  name="startsAt"
+                  type="datetime-local"
+                  required
+                  defaultValue={isoToLocalInput(startsAtIso)}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="endsAt">Ends (optional)</Label>
-                <Input id="endsAt" name="endsAt" type="datetime-local" />
+                <Input
+                  id="endsAt"
+                  name="endsAt"
+                  type="datetime-local"
+                  defaultValue={isoToLocalInput(endsAtIso)}
+                />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="capacity">Capacity (optional)</Label>
-                <Input id="capacity" name="capacity" type="number" min={1} placeholder="No limit" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="share">Sharing</Label>
-                <select
-                  id="share"
-                  name="share"
-                  defaultValue=""
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                >
-                  <option value="">Invite only</option>
-                  {circles.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      Share with {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="capacity">Capacity (optional)</Label>
+              <Input
+                id="capacity"
+                name="capacity"
+                type="number"
+                min={1}
+                placeholder="No limit"
+                defaultValue={capacity ?? ""}
+              />
             </div>
 
             <div className="flex gap-3 pt-2">
               <Button type="submit" disabled={loading}>
-                {loading ? "Creating…" : "Create Event"}
+                {loading ? "Saving…" : "Save changes"}
               </Button>
               <Button asChild type="button" variant="ghost">
-                <Link href="/hub">Cancel</Link>
+                <Link href={`/events/${id}`}>Cancel</Link>
               </Button>
             </div>
           </form>

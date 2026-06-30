@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { format, isAfter, isSameMonth } from "date-fns";
+import { isAfter, isSameMonth } from "date-fns";
+import { LocalTime } from "@/components/local-time";
 import { Calendar, MapPin, Plus, Users } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -149,7 +150,10 @@ export default async function HubPage() {
                       <div className="mt-1 text-sm text-muted-foreground flex items-center gap-3 flex-wrap">
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3.5 w-3.5" />
-                          {format(new Date(event.startsAt), "EEE d MMM · HH:mm")}
+                          <LocalTime
+                            iso={new Date(event.startsAt).toISOString()}
+                            fmt="EEE d MMM · HH:mm"
+                          />
                         </span>
                         {event.location && (
                           <span className="flex items-center gap-1">

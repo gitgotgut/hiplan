@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { format } from "date-fns";
-import { ArrowLeft, Calendar, MapPin, Users } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Users, Pencil } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getMyCircleIds } from "@/lib/circles";
+import { LocalTime } from "@/components/local-time";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { RsvpForm } from "./rsvp-form";
 import { DeleteEventButton } from "./delete-event-button";
 
@@ -89,8 +90,16 @@ export default async function EventDetailPage({
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <span>
-              {format(new Date(event.startsAt), "EEEE d MMMM yyyy · HH:mm")}
-              {event.endsAt && ` – ${format(new Date(event.endsAt), "HH:mm")}`}
+              <LocalTime
+                iso={event.startsAt.toISOString()}
+                fmt="EEEE d MMMM yyyy · HH:mm"
+              />
+              {event.endsAt && (
+                <>
+                  {" – "}
+                  <LocalTime iso={event.endsAt.toISOString()} fmt="HH:mm" />
+                </>
+              )}
             </span>
           </div>
           {event.location && (
@@ -167,7 +176,12 @@ export default async function EventDetailPage({
       </Card>
 
       {isHost && (
-        <div className="mt-6 flex justify-end">
+        <div className="mt-6 flex justify-end gap-2">
+          <Button asChild variant="outline" className="gap-2">
+            <Link href={`/events/${event.id}/edit`}>
+              <Pencil className="h-4 w-4" /> Edit
+            </Link>
+          </Button>
           <DeleteEventButton eventId={event.id} />
         </div>
       )}
