@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { rsvpSchema } from "@/lib/validations/event";
+import { rateLimit } from "@/lib/rate-limit";
 
 // PUT /api/events/[id]/rsvp — upsert the current user's RSVP
 export async function PUT(
@@ -13,6 +14,10 @@ export async function PUT(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const userId = session.user.id;
+
+  if (!(await rateLimit("rsvp", userId, 30, 60))) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
 
   const event = await prisma.event.findUnique({
     where: { id: params.id },
